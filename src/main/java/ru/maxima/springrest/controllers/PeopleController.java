@@ -9,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.annotation.*;
+import ru.maxima.springrest.dto.PersonDTO;
 import ru.maxima.springrest.exceptions.IdMoreThanTenThousandsException;
 import ru.maxima.springrest.exceptions.PersonErrorResponse;
 import ru.maxima.springrest.exceptions.PersonNotCreatedException;
@@ -16,8 +17,10 @@ import ru.maxima.springrest.exceptions.PersonNotFoundException;
 import ru.maxima.springrest.models.Person;
 import ru.maxima.springrest.service.PeopleService;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/people")
@@ -31,17 +34,24 @@ public class PeopleController {
     }
 
     @GetMapping()
-    public List<Person> getAllPeople() {
-        return peopleService.getAllPeople(); // Jackson сконвертирует объекты в Json
+    public List<PersonDTO> getAllPeople() {
+        List<Person> allPeople = peopleService.getAllPeople();
+        List<PersonDTO> personDTOList = new ArrayList<>();
+        for (Person p: allPeople) {
+            personDTOList.add(peopleService.convertFromPersonToPersonDTO(p));
+        }
+
+        return personDTOList; // Jackson сконвертирует объекты в Json
     }
 
     @GetMapping("/{id}") // 1666666
-    public Person getPersonById(@PathVariable("id") Long id) {
-        return peopleService.findById(id); // Jackson сконвертирует объекты в Json
+    public PersonDTO getPersonById(@PathVariable("id") Long id) {
+        Person byId = peopleService.findById(id);
+        return peopleService.convertFromPersonToPersonDTO(byId); // Jackson сконвертирует объекты в Json
     }
 
     @PostMapping()
-    public ResponseEntity<HttpStatus> savePerson(@RequestBody @Valid Person person,
+    public ResponseEntity<HttpStatus> savePerson(@RequestBody @Valid PersonDTO personDTO,
                              BindingResult bindingResult) {
 
         if (bindingResult.hasErrors()) {
@@ -58,6 +68,8 @@ public class PeopleController {
 
             throw new PersonNotCreatedException(stringBuilder.toString());
         }
+
+        Person person = peopleService.convertFromDTOToPerson(personDTO);
 
         peopleService.save(person);
 

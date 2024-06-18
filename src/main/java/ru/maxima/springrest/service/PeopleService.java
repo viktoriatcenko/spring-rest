@@ -1,13 +1,16 @@
 package ru.maxima.springrest.service;
 
 import jakarta.transaction.Transactional;
+import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import ru.maxima.springrest.dto.PersonDTO;
 import ru.maxima.springrest.exceptions.IdMoreThanTenThousandsException;
 import ru.maxima.springrest.exceptions.PersonNotFoundException;
 import ru.maxima.springrest.models.Person;
 import ru.maxima.springrest.repositories.PeopleRepository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -15,10 +18,12 @@ import java.util.Optional;
 public class PeopleService {
 
     private final PeopleRepository repository;
+    private final ModelMapper modelMapper;
 
     @Autowired
-    public PeopleService(PeopleRepository repository) {
+    public PeopleService(PeopleRepository repository, ModelMapper modelMapper) {
         this.repository = repository;
+        this.modelMapper = modelMapper;
     }
 
     @Transactional
@@ -44,9 +49,6 @@ public class PeopleService {
 
     @Transactional
     public void save(Person person) {
-
-        person.setRole("ROLE_USER");
-
         repository.save(person);
     }
 
@@ -68,4 +70,22 @@ public class PeopleService {
 
         System.out.println(v);
     }
+
+    public PersonDTO convertFromPersonToPersonDTO(Person person) {
+        return modelMapper.map(person, PersonDTO.class);
+    }
+
+    public Person convertFromDTOToPerson(PersonDTO personDTO) {
+        Person person = modelMapper.map(personDTO, Person.class);
+        enrich(person);
+        return person;
+    }
+
+    private void enrich(Person p) {
+        p.setCreatedAt(LocalDateTime.now());
+        p.setCreatedBy("ADMIN");
+        p.setRole("ROLE_USER");
+        p.setRemoved(false);
+    }
+
 }
