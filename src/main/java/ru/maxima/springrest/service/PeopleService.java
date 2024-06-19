@@ -9,6 +9,7 @@ import ru.maxima.springrest.exceptions.IdMoreThanTenThousandsException;
 import ru.maxima.springrest.exceptions.PersonNotFoundException;
 import ru.maxima.springrest.models.Person;
 import ru.maxima.springrest.repositories.PeopleRepository;
+import ru.maxima.springrest.util.JWTUtil;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -20,14 +21,24 @@ public class PeopleService {
     private final PeopleRepository repository;
     private final ModelMapper modelMapper;
 
+    private final JWTUtil jwtUtil;
+
     @Autowired
-    public PeopleService(PeopleRepository repository, ModelMapper modelMapper) {
+    public PeopleService(PeopleRepository repository, ModelMapper modelMapper, JWTUtil jwtUtil) {
         this.repository = repository;
         this.modelMapper = modelMapper;
+        this.jwtUtil = jwtUtil;
     }
 
     @Transactional
     public List<Person> getAllPeople() {
+
+        String token = jwtUtil.generateToken("Viktor");
+
+        String username = jwtUtil.validateTokenAndReturnUsername(token);
+
+        System.out.println(username);
+
         List<Person> people = repository.findAll();
 
 
