@@ -1,12 +1,20 @@
 package ru.maxima.springrest.controllers;
 
 import jakarta.validation.Valid;
+import lombok.val;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
+import ru.maxima.springrest.dto.AuthDTO;
 import ru.maxima.springrest.dto.PersonDTO;
 import ru.maxima.springrest.models.Person;
+import ru.maxima.springrest.security.PersonDetails;
 import ru.maxima.springrest.service.PeopleService;
 import ru.maxima.springrest.util.JWTUtil;
 import ru.maxima.springrest.validation.PersonValidator;
@@ -21,19 +29,37 @@ public class AuthController {
     private final JWTUtil jwtUtil;
     private final ModelMapper mapper;
     private final PersonValidator personValidator;
+    private final AuthenticationManager authenticationManager;
 
 
     @Autowired
-    public AuthController(PeopleService peopleService, JWTUtil jwtUtil, ModelMapper mapper, PersonValidator personValidator) {
+    public AuthController(PeopleService peopleService, JWTUtil jwtUtil, ModelMapper mapper, PersonValidator personValidator, AuthenticationManager authenticationManager) {
         this.peopleService = peopleService;
         this.jwtUtil = jwtUtil;
         this.mapper = mapper;
         this.personValidator = personValidator;
+        this.authenticationManager = authenticationManager;
     }
 
-    @GetMapping("/login")
-    public String login() {
-        return "successfully login";
+    @PostMapping("/login")
+    public Map<String, String> login(@RequestBody AuthDTO authDTO) {
+
+        UsernamePasswordAuthenticationToken userToken =
+                new UsernamePasswordAuthenticationToken(
+                        authDTO.getName(), authDTO.getPassword()
+                );
+
+        try {
+            authenticationManager.authenticate(userToken);
+        } catch (Exception e) {
+            return Map.of("error", "incorrect login or password");
+        }
+
+
+
+        String token = jwtUtil.generateToken(authDTO.getName());
+
+        return Map.of("jwt-token", token);
     }
 
     @PostMapping("/registration")
@@ -53,5 +79,14 @@ public class AuthController {
         String token = jwtUtil.generateToken(person.getName());
 
         return Map.of("jwt-token", token);
+    }
+
+    @GetMapping("/show")
+    public String showAuthenticatedUsers() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        PersonDetails principal = (PersonDetails) authentication.getPrincipal();
+
+        return principal.getUsername();
+
     }
 }

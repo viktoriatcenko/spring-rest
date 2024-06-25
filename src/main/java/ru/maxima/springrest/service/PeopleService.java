@@ -3,6 +3,7 @@ package ru.maxima.springrest.service;
 import jakarta.transaction.Transactional;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import ru.maxima.springrest.dto.PersonDTO;
 import ru.maxima.springrest.exceptions.IdMoreThanTenThousandsException;
@@ -22,12 +23,14 @@ public class PeopleService {
     private final ModelMapper modelMapper;
 
     private final JWTUtil jwtUtil;
+    private final PasswordEncoder passwordEncoder;
 
     @Autowired
-    public PeopleService(PeopleRepository repository, ModelMapper modelMapper, JWTUtil jwtUtil) {
+    public PeopleService(PeopleRepository repository, ModelMapper modelMapper, JWTUtil jwtUtil, PasswordEncoder passwordEncoder) {
         this.repository = repository;
         this.modelMapper = modelMapper;
         this.jwtUtil = jwtUtil;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @Transactional
@@ -96,6 +99,7 @@ public class PeopleService {
         p.setCreatedAt(LocalDateTime.now());
         p.setCreatedBy("ADMIN");
         p.setRole("ROLE_USER");
+        p.setPassword(passwordEncoder.encode(p.getPassword()));
         p.setRemoved(false);
     }
 
